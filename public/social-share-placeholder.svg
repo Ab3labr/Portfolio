@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Portfolio social sharing placeholder</title>
+  <desc id="description">A warm white portfolio sharing image placeholder with near-black type and a graphite accent.</desc>
+  <rect width="1200" height="630" fill="#F5F4F0"/>
+  <circle cx="108" cy="104" r="12" fill="#333333"/>
+  <text x="96" y="330" fill="#171717" font-family="Arial, sans-serif" font-size="88" font-weight="700">[YOUR NAME]</text>
+  <text x="102" y="398" fill="#858585" font-family="Arial, sans-serif" font-size="24" letter-spacing="7">PRODUCT / DIGITAL EXPERIENCES</text>
+</svg>
