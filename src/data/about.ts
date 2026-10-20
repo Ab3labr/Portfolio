@@ -18,12 +18,12 @@ export const aboutContent = {
 
 export const portraitFaces = {
   front: {
-    src: "/assets/front%20image.webp",
+    src: "/assets/front-image.webp",
     alt: "Abel Abraham in profile wearing glasses",
     placeholderLabel: "FRONT IMAGE",
   },
   back: {
-    src: "/assets/back%20image.webp",
+    src: "/assets/back-image.webp",
     alt: "Abel Abraham in profile against a blue background",
     placeholderLabel: "",
   },
