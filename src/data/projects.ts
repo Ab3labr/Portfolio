@@ -1,7 +1,7 @@
-import amplyMockup from "../assets/projects/amply-mockup.png"
-import nirvanicaMockup from "../assets/projects/nirvanica-mockup.png"
-import vayoauraMockup from "../assets/projects/vayoaura-mockup.png"
-import vsyncMockup from "../assets/projects/vsync-mockup.png"
+import amplyMockup from "../assets/projects/amply-mockup.webp"
+import nirvanicaMockup from "../assets/projects/nirvanica-mockup.webp"
+import vayoauraMockup from "../assets/projects/vayoaura-mockup.webp"
+import vsyncMockup from "../assets/projects/vsync-mockup.webp"
 
 export type Project = {
   id: string

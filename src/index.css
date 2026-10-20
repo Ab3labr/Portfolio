@@ -106,7 +106,7 @@ a {
 
 .site-shell::before {
   position: fixed;
-  background-image: url("/assets/portfolio%20gradient.jpg");
+  background-image: url("/assets/portfolio%20gradient.webp");
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
