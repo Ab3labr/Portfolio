@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { Outlet, ScrollRestoration, useLocation } from "react-router"
 import { CustomCursor } from "../components/CustomCursor"
 import { Header } from "../components/Header"
+import { ProximityEffects } from "../components/ProximityEffects"
 import { NavLink } from "../components/primitives"
 
 function HashScrollManager() {
@@ -54,6 +55,7 @@ export function RootLayout() {
       </main>
       <HashScrollManager />
       <RouteFocusManager />
+      <ProximityEffects />
       <ScrollRestoration />
     </div>
   )

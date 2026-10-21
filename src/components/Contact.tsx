@@ -1,9 +1,47 @@
-import { useEffect, useRef, useState } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react"
 import { siBehance } from "simple-icons"
 import { Text } from "./primitives"
 
 const portfolioMark =
   "M16 1C17.7 9.4 22.6 14.3 31 16C22.6 17.7 17.7 22.6 16 31C14.3 22.6 9.4 17.7 1 16C9.4 14.3 14.3 9.4 16 1Z"
+
+const shredCompleteProgress = 0.42
+const shredFeedDuration = 620
+const shredKeyboardDuration = 980
+const shredReturnDuration = 260
+
+const shredderStrips = Array.from({ length: 26 }, (_, index) => ({
+  length: 3.2 + (((index * 37) % 15) / 15) * 1.6,
+  lean: ((index * 29) % 7) - 3,
+  tilt: ((index * 13) % 5) - 2,
+  start: ((index * 7) % 10) * 0.014 + ((index * 11) % 3) * 0.006,
+  rate: 1.24 + ((index * 5) % 4) * 0.035,
+  drop: 0.12 + (((index * 17) % 7) / 7) * 0.26,
+  twist: (((index * 19) % 5) - 2) * 0.9,
+  fallX: (((index * 23) % 9) - 4) * 0.6,
+  fallY: 2.1 + (((index * 31) % 9) / 9) * 1.1,
+  fallRotate: (((index * 17) % 7) - 3) * 1.1,
+  fallDuration: 620 + ((index * 19) % 5) * 35,
+  fallDelay: ((index * 11) % 5) * 14,
+}))
+
+type DragSession = {
+  pointerId: number
+  startY: number
+  startProgress: number
+  feedDistance: number
+  source: "paper" | "handle"
+  moved: boolean
+}
+
+type ShredState = "idle" | "dragging" | "feeding" | "shredded" | "reprinting"
 
 const barcodeBars = [
   [2, 32, 1], [1, 24, 2], [4, 32, 1], [1, 32, 2], [3, 19, 1], [2, 32, 1],
@@ -41,9 +79,290 @@ const contactItems = [
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null)
   const barcodeRef = useRef<HTMLDivElement>(null)
+  const contactInnerRef = useRef<HTMLDivElement>(null)
+  const paperRef = useRef<HTMLElement>(null)
+  const pullHandleRef = useRef<HTMLButtonElement>(null)
+  const resetButtonRef = useRef<HTMLButtonElement>(null)
+  const progressRef = useRef(0)
+  const dragRef = useRef<DragSession | null>(null)
+  const progressFrameRef = useRef(0)
+  const progressTokenRef = useRef(0)
+  const reprintFrameRef = useRef(0)
+  const suppressClickRef = useRef(false)
+  const suppressClickTimerRef = useRef<number | null>(null)
+  const focusResetButtonRef = useRef(false)
+  const focusPullHandleRef = useRef(false)
   const [isActive, setIsActive] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isBarcodeVisible, setIsBarcodeVisible] = useState(false)
+  const [shredState, setShredState] = useState<ShredState>("idle")
+
+  const canInteractWithShredder =
+    isComplete &&
+    shredState !== "feeding" &&
+    shredState !== "shredded" &&
+    shredState !== "reprinting"
+  const isShredSurface = isComplete && shredState !== "reprinting"
+  const isShredding = shredState === "dragging" || shredState === "feeding"
+  const isShredded = shredState === "shredded"
+
+  const prefersReducedMotion = () =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+  const writeProgress = (value: number) => {
+    const nextProgress = Math.min(Math.max(value, 0), 1)
+    progressRef.current = nextProgress
+    contactInnerRef.current?.style.setProperty(
+      "--shred-progress",
+      nextProgress.toFixed(4),
+    )
+  }
+
+  const cancelProgressAnimation = () => {
+    progressTokenRef.current += 1
+    if (progressFrameRef.current) {
+      window.cancelAnimationFrame(progressFrameRef.current)
+      progressFrameRef.current = 0
+    }
+  }
+
+  const animateProgress = (
+    target: number,
+    duration: number,
+    onComplete?: () => void,
+  ) => {
+    cancelProgressAnimation()
+    const token = progressTokenRef.current
+    const startProgress = progressRef.current
+
+    if (duration <= 0) {
+      writeProgress(target)
+      onComplete?.()
+      return
+    }
+
+    const startTime = window.performance.now()
+
+    const step = (now: number) => {
+      if (token !== progressTokenRef.current) return
+
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      writeProgress(startProgress + (target - startProgress) * eased)
+
+      if (progress < 1) {
+        progressFrameRef.current = window.requestAnimationFrame(step)
+        return
+      }
+
+      progressFrameRef.current = 0
+      onComplete?.()
+    }
+
+    progressFrameRef.current = window.requestAnimationFrame(step)
+  }
+
+  const cancelReprintFrame = () => {
+    if (!reprintFrameRef.current) return
+    window.cancelAnimationFrame(reprintFrameRef.current)
+    reprintFrameRef.current = 0
+  }
+
+  const scheduleReprint = () => {
+    reprintFrameRef.current = window.requestAnimationFrame(() => {
+      setShredState("idle")
+      reprintFrameRef.current = window.requestAnimationFrame(() => {
+        reprintFrameRef.current = 0
+        setIsActive(true)
+        if (prefersReducedMotion()) setIsComplete(true)
+      })
+    })
+  }
+
+  const suppressNextClick = () => {
+    suppressClickRef.current = true
+    if (suppressClickTimerRef.current) {
+      window.clearTimeout(suppressClickTimerRef.current)
+    }
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false
+      suppressClickTimerRef.current = null
+    }, 450)
+  }
+
+  const finishShred = (keyboardInitiated: boolean) => {
+    setShredState("shredded")
+    if (keyboardInitiated) focusResetButtonRef.current = true
+  }
+
+  const startAutoShred = (keyboardInitiated: boolean) => {
+    if (
+      !isComplete ||
+      shredState === "feeding" ||
+      shredState === "shredded" ||
+      shredState === "reprinting"
+    ) {
+      return
+    }
+
+    cancelProgressAnimation()
+    setShredState("feeding")
+    animateProgress(
+      1,
+      prefersReducedMotion()
+        ? 0
+        : keyboardInitiated
+          ? shredKeyboardDuration
+          : shredFeedDuration,
+      () => finishShred(keyboardInitiated),
+    )
+  }
+
+  const startDrag = (
+    event: ReactPointerEvent<HTMLElement>,
+    source: DragSession["source"],
+  ) => {
+    if (!canInteractWithShredder || dragRef.current) return
+    if (event.pointerType === "mouse" && event.button !== 0) return
+    if (source === "paper" && event.pointerType !== "mouse") return
+
+    const paperHeight = paperRef.current?.offsetHeight ?? 480
+    const feedDistance = Math.min(Math.max(paperHeight * 0.58, 190), 340)
+
+    cancelProgressAnimation()
+    if (suppressClickTimerRef.current) {
+      window.clearTimeout(suppressClickTimerRef.current)
+      suppressClickTimerRef.current = null
+    }
+    suppressClickRef.current = false
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startProgress: progressRef.current,
+      feedDistance,
+      source,
+      moved: false,
+    }
+    setShredState("dragging")
+    paperRef.current?.setPointerCapture(event.pointerId)
+    event.preventDefault()
+  }
+
+  const handlePaperPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!canInteractWithShredder) return
+    const target = event.target
+    if (target instanceof Element && target.closest("a, button")) return
+    startDrag(event, "paper")
+  }
+
+  const handlePullPointerDown = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    startDrag(event, "handle")
+  }
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const delta = event.clientY - drag.startY
+    if (Math.abs(delta) > 4) drag.moved = true
+    writeProgress(drag.startProgress + delta / drag.feedDistance)
+
+    if (drag.moved && event.cancelable) event.preventDefault()
+  }
+
+  const releasePointerCapture = (pointerId: number) => {
+    if (!paperRef.current?.hasPointerCapture(pointerId)) return
+    paperRef.current.releasePointerCapture(pointerId)
+  }
+
+  const handlePointerEnd = (
+    event: ReactPointerEvent<HTMLElement>,
+    cancelled = false,
+  ) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    dragRef.current = null
+    releasePointerCapture(event.pointerId)
+
+    if (drag.moved) suppressNextClick()
+
+    if (!cancelled && progressRef.current >= shredCompleteProgress) {
+      startAutoShred(false)
+      return
+    }
+
+    if (!cancelled && drag.source === "handle" && !drag.moved) {
+      suppressNextClick()
+      startAutoShred(false)
+      return
+    }
+
+    animateProgress(
+      0,
+      prefersReducedMotion() ? 0 : shredReturnDuration,
+      () => setShredState("idle"),
+    )
+  }
+
+  const handlePullClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
+
+    startAutoShred(event.detail === 0)
+  }
+
+  const handlePrintAgain = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    cancelProgressAnimation()
+    cancelReprintFrame()
+    dragRef.current = null
+    writeProgress(0)
+    suppressClickRef.current = false
+    focusPullHandleRef.current = event.detail === 0
+    setIsComplete(false)
+    setShredState("reprinting")
+    setIsActive(false)
+    scheduleReprint()
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelProgressAnimation()
+      cancelReprintFrame()
+      if (suppressClickTimerRef.current) {
+        window.clearTimeout(suppressClickTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (shredState !== "shredded" || !focusResetButtonRef.current) return
+
+    focusResetButtonRef.current = false
+    const frame = window.requestAnimationFrame(() => {
+      resetButtonRef.current?.focus()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [shredState])
+
+  useEffect(() => {
+    if (!isComplete || !focusPullHandleRef.current) return
+
+    focusPullHandleRef.current = false
+    const frame = window.requestAnimationFrame(() => {
+      pullHandleRef.current?.focus()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [isComplete])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -101,7 +420,11 @@ export function Contact() {
       aria-labelledby="contact-title"
       ref={sectionRef}
     >
-      <div className="contact-inner">
+      <div
+        className="contact-inner"
+        ref={contactInnerRef}
+        style={{ "--shred-progress": 0 } as CSSProperties}
+      >
         <div className="contact-printer" aria-label="Thermal receipt printer">
           <div className="contact-printer-topline">
             <span className="contact-printer-brand">
@@ -122,8 +445,14 @@ export function Contact() {
         </div>
 
         <article
-          className="contact-paper"
+          className={`contact-paper${isShredSurface ? " contact-paper--shreddable" : ""}${isShredding ? " contact-paper--dragging" : ""}${isShredded ? " contact-paper--shredded" : ""}${shredState === "reprinting" ? " contact-paper--reprinting" : ""}`}
+          ref={paperRef}
           aria-labelledby="contact-title"
+          data-shred-state={shredState}
+          onPointerDown={handlePaperPointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={(event) => handlePointerEnd(event, true)}
           onTransitionEnd={(event) => {
             if (event.propertyName === "clip-path") setIsComplete(true)
           }}
@@ -207,7 +536,68 @@ export function Contact() {
             <Text className="contact-closing">THANK YOU FOR BEING HERE.</Text>
             <Text className="contact-end">— END OF PAGE —</Text>
           </footer>
+
+          {canInteractWithShredder ? (
+            <button
+              className="contact-paper-pull"
+              ref={pullHandleRef}
+              type="button"
+              aria-label="Pull the receipt down to shred it"
+              onPointerDown={handlePullPointerDown}
+              onClick={handlePullClick}
+            >
+              <span aria-hidden="true">↓</span>
+              <span>Pull to shred</span>
+            </button>
+          ) : null}
         </article>
+
+        <div
+          className={`contact-shredder${isShredded ? " contact-shredder--settled" : ""}`}
+          aria-hidden="true"
+        >
+          <div className="contact-shredder-strips">
+            {shredderStrips.map((strip, index) => (
+              <span
+                className="contact-shredder-strip"
+                key={index}
+                style={
+                  {
+                    "--strip-length": `${strip.length}rem`,
+                    "--strip-lean": `${strip.lean}px`,
+                    "--strip-tilt": `${strip.tilt}deg`,
+                    "--strip-start": strip.start,
+                    "--strip-rate": strip.rate,
+                    "--strip-drop": `${strip.drop}rem`,
+                    "--strip-twist": `${strip.twist}deg`,
+                    "--strip-fall-x": `${strip.fallX}px`,
+                    "--strip-fall-y": `${strip.fallY}rem`,
+                    "--strip-fall-rotate": `${strip.fallRotate}deg`,
+                    "--strip-fall-duration": `${strip.fallDuration}ms`,
+                    "--strip-fall-delay": `${strip.fallDelay}ms`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+          <span className="contact-shredder-slot" />
+          <span className="contact-shredder-label">AA / SHRED</span>
+        </div>
+
+        <div className="contact-shred-controls" aria-live="polite">
+          {isShredded ? (
+            <button
+              className="contact-shred-reset"
+              ref={resetButtonRef}
+              type="button"
+              aria-label="Print the receipt again"
+              onClick={handlePrintAgain}
+            >
+              <span aria-hidden="true">↻</span>
+              <span>Print again</span>
+            </button>
+          ) : null}
+        </div>
       </div>
     </footer>
   )

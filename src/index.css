@@ -330,12 +330,10 @@ a {
   text-align: left;
 }
 
-.hero-name--enter span {
+.hero-name .hero-name-char {
+  display: inline-block;
   animation: hero-name-line-appear 800ms var(--ease-cinematic) both;
-}
-
-.hero-name--enter span:nth-child(2) {
-  animation-delay: 100ms;
+  animation-delay: calc(140ms + (var(--char-index, 0) * 28ms));
 }
 
 @keyframes hero-name-line-appear {
@@ -574,6 +572,7 @@ a {
 }
 
 .about-transition-introduction .about-title {
+  --proximity-strength: 2.25;
   max-width: 100%;
   font-size: clamp(2.7rem, 4.2vw, 5rem);
   font-weight: 500;
@@ -584,6 +583,26 @@ a {
 
 .about-transition-introduction .about-title span {
   display: block;
+}
+
+.about-transition-introduction .about-title .proximity-char {
+  display: inline;
+}
+
+.proximity-char {
+  -webkit-text-stroke-color: currentColor;
+  -webkit-text-stroke-width: calc(
+    var(--proximity, 0) * var(--proximity-strength, 1) * 0.014em
+  );
+  paint-order: stroke fill;
+  transition: -webkit-text-stroke-width 180ms var(--ease-cinematic);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proximity-char {
+    -webkit-text-stroke-width: 0;
+    transition: none;
+  }
 }
 
 .about-transition-support {
@@ -1540,6 +1559,7 @@ em {
 }
 
 .contact-paper {
+  --shred-hand-cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'24'%20height%3D'24'%20viewBox%3D'0%200%2024%2024'%3E%3Cpath%20fill%3D'%23171717'%20d%3D'M23%205.5V19c0%203.3-2.7%206-6%206h-4.5c-1.6%200-3.1-.6-4.2-1.8L3.2%2018l1.4-1.5c.4-.4%201-.5%201.4-.2L9%2018.5V2.5C9%201.7%209.7%201%2010.5%201S12%201.7%2012%202.5V11h1V1.5c0-.8.7-1.5%201.5-1.5S16%20.7%2016%201.5V11h1V3.5c0-.8.7-1.5%201.5-1.5S20%202.7%2020%203.5V11h1V5.5c0-.8.7-1.5%201.5-1.5S23%204.7%2023%205.5z'%2F%3E%3C%2Fsvg%3E") 10 2;
   position: relative;
   z-index: 1;
   width: min(22rem, 94%);
@@ -1834,6 +1854,282 @@ em {
   text-align: right;
 }
 
+.contact-paper--reprinting {
+  transition: none !important;
+}
+
+.contact--active .contact-paper--shreddable {
+  cursor: var(--shred-hand-cursor), grab;
+  user-select: none;
+  touch-action: pan-y;
+  transform: translate3d(0, calc(var(--shred-progress, 0) * 100%), 0);
+  clip-path: inset(0 0 calc(var(--shred-progress, 0) * 100%) 0);
+  transition:
+    clip-path 180ms var(--ease-cinematic),
+    transform 180ms var(--ease-cinematic);
+  will-change: transform, clip-path;
+}
+
+.contact-paper--shreddable a {
+  cursor: pointer;
+  user-select: text;
+}
+
+.contact-paper--shreddable.contact-paper--dragging {
+  cursor: var(--shred-hand-cursor), grabbing;
+  transition: none;
+}
+
+.contact-paper--shredded {
+  pointer-events: none;
+}
+
+.contact-paper-pull {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  height: 1.7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0;
+  border: 0;
+  border-top: 1px dashed rgba(84, 76, 62, 0.2);
+  color: #726b5f;
+  background: linear-gradient(180deg, rgba(243, 240, 232, 0), rgba(232, 227, 216, 0.52));
+  font: inherit;
+  font-size: 0.47rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: var(--shred-hand-cursor), grab;
+  touch-action: none;
+}
+
+.contact-paper-pull > span[aria-hidden="true"] {
+  color: #171717;
+}
+
+.contact-paper-pull::before {
+  position: absolute;
+  top: -0.7rem;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: "";
+}
+
+.contact-paper-pull:hover,
+.contact-paper-pull:focus-visible {
+  color: #3f3b34;
+}
+
+.contact-paper-pull:focus-visible {
+  outline: 1px solid #71634e;
+  outline-offset: -3px;
+}
+
+.contact-shredder {
+  --strip-scale: 1;
+  position: relative;
+  z-index: 3;
+  width: min(22rem, 94%);
+  height: 2.5rem;
+  margin-top: -0.16rem;
+  overflow: visible;
+  border: 1px solid rgba(16, 16, 15, 0.74);
+  border-radius: 0.32rem 0.32rem 0.58rem 0.58rem;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.13), transparent 34%),
+    linear-gradient(180deg, #454440 0%, #2f2f2c 48%, #1d1d1b 100%);
+  box-shadow:
+    0 0.65rem 1rem rgba(31, 29, 24, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.24);
+}
+
+.contact-shredder::before {
+  position: absolute;
+  top: calc(100% - 0.02rem);
+  right: 8%;
+  left: 8%;
+  z-index: 0;
+  height: 2.4rem;
+  border-radius: 0 0 1.1rem 1.1rem;
+  background: linear-gradient(180deg, rgba(29, 29, 27, 0.14), rgba(29, 29, 27, 0));
+  content: "";
+  pointer-events: none;
+}
+
+.contact-shredder::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 0.62rem;
+  border-radius: 0 0 0.58rem 0.58rem;
+  background: linear-gradient(180deg, rgba(29, 29, 27, 0), rgba(29, 29, 27, 0.72) 48%, #1d1d1b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  content: "";
+  pointer-events: none;
+}
+
+.contact-shredder-strips {
+  position: absolute;
+  top: 0.16rem;
+  right: 0.95rem;
+  bottom: auto;
+  left: 0.95rem;
+  z-index: 1;
+  display: flex;
+  overflow: visible;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.contact-shredder-strip {
+  --strip-feed: clamp(0, calc((var(--shred-progress, 0) - var(--strip-start, 0)) * var(--strip-rate, 1.2)), 1);
+  width: 0;
+  height: calc(var(--strip-feed) * var(--strip-length, 2.8rem) * var(--strip-scale, 1));
+  min-width: 0;
+  flex: 1 1 0;
+  border-radius: 0 0 1px 1px;
+  background:
+    repeating-linear-gradient(0deg, rgba(91, 82, 66, 0.075) 0, rgba(91, 82, 66, 0.075) 1px, transparent 1px, transparent 4px),
+    linear-gradient(90deg, #ebe7dd, #f8f5ee 46%, #e3dfd5);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 2px), 82% 100%, 65% calc(100% - 3px), 48% 100%, 32% calc(100% - 2px), 16% 100%, 0 calc(100% - 3px));
+  opacity: calc(0.3 + var(--strip-feed) * 0.7);
+  transform:
+    translate3d(var(--strip-lean, 0px), calc(var(--strip-feed) * var(--strip-feed) * var(--strip-drop, 0.2rem)), 0)
+    rotate(calc(var(--strip-tilt, 0deg) + var(--strip-feed) * var(--strip-twist, 0deg)));
+  transform-origin: top center;
+  pointer-events: none;
+}
+
+.contact-shredder-strip:nth-child(3n) {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 3px), 78% 96%, 62% 100%, 45% 95%, 29% 100%, 13% 97%, 0 100%);
+}
+
+.contact-shredder--settled .contact-shredder-strip {
+  animation-name: contact-shredder-strip-fall;
+  animation-duration: var(--strip-fall-duration, 700ms);
+  animation-timing-function: cubic-bezier(0.42, 0.03, 0.68, 0.38);
+  animation-delay: calc(300ms + var(--strip-fall-delay, 0ms));
+  animation-fill-mode: both;
+}
+
+@keyframes contact-shredder-strip-fall {
+  0% {
+    translate: 0 0;
+    rotate: 0deg;
+    opacity: 1;
+  }
+
+  24% {
+    opacity: 0.98;
+  }
+
+  72% {
+    opacity: 0.72;
+  }
+
+  100% {
+    translate: var(--strip-fall-x, 0px) var(--strip-fall-y, 2.6rem);
+    rotate: var(--strip-fall-rotate, 2deg);
+    opacity: 0;
+  }
+}
+
+.contact-shredder-slot {
+  position: absolute;
+  top: 0.16rem;
+  right: 0.7rem;
+  left: 0.7rem;
+  z-index: 4;
+  height: 0.32rem;
+  border: 1px solid rgba(0, 0, 0, 0.62);
+  border-radius: 0.3rem;
+  background: linear-gradient(180deg, #0d0d0c, #232320 72%, #050505);
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.92),
+    0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.contact-shredder-label {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.31rem;
+  z-index: 3;
+  color: rgba(225, 221, 211, 0.42);
+  font-size: 0.4rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.contact-shred-controls {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.55rem;
+}
+
+.contact-shred-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.05rem;
+  border: 0;
+  border-bottom: 1px solid rgba(66, 61, 52, 0.3);
+  color: #77736c;
+  background: none;
+  font: inherit;
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: contact-shred-reset-in 240ms ease both;
+  transition:
+    color 220ms var(--ease-cinematic),
+    border-color 220ms var(--ease-cinematic);
+}
+
+.contact-shred-reset:hover,
+.contact-shred-reset:focus-visible {
+  border-color: rgba(40, 39, 36, 0.66);
+  color: #282724;
+}
+
+.contact-shred-reset:focus-visible {
+  outline: 1px solid #71634e;
+  outline-offset: 3px;
+}
+
+@keyframes contact-shred-reset-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes contact-print-status {
   50% {
     opacity: 0.35;
@@ -1879,6 +2175,30 @@ em {
 
   .contact-barcode {
     width: min(15rem, 78%);
+  }
+
+  .contact-paper-pull {
+    height: 1.55rem;
+  }
+
+  .contact-shredder {
+    --strip-scale: 0.82;
+    height: 2.2rem;
+  }
+
+  .contact-shredder-strips {
+    top: 0.16rem;
+    right: 0.6rem;
+    left: 0.6rem;
+  }
+
+  .contact-shredder-label {
+    right: 0.55rem;
+    bottom: 0.27rem;
+  }
+
+  .contact-shred-controls {
+    margin-top: 2.15rem;
   }
 }
 
@@ -1928,6 +2248,17 @@ em {
     animation: none;
     clip-path: inset(0);
     opacity: 1;
+  }
+
+  .contact-shredder-strip {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .contact-shredder--settled .contact-shredder-strip {
+    height: 0;
+    visibility: hidden;
+    opacity: 0;
   }
 }
 
@@ -2696,7 +3027,7 @@ em {
     transform: none;
   }
 
-  .hero-name--enter span,
+  .hero-name .hero-name-char,
   .hero-transition-meta,
   .hero-contact-link,
   .portrait-card--animated,

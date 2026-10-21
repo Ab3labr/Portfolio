@@ -15,6 +15,54 @@ const rangeProgress = (progress: number, start: number, end: number) => {
   return linear * linear * (3 - 2 * linear)
 }
 
+type HeroNameLineProps = {
+  text: string
+  startIndex?: number
+  className?: string
+}
+
+function HeroNameLine({
+  text,
+  startIndex = 0,
+  className = "",
+}: HeroNameLineProps) {
+  return (
+    <span className={className} aria-hidden="true">
+      {Array.from(text).map((character, index) => (
+        <span
+          className="hero-name-char proximity-char"
+          data-proximity-char=""
+          style={{ "--char-index": startIndex + index } as CSSProperties}
+          key={`${character}-${index}`}
+        >
+          {character}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function AboutProximityText({ text }: { text: string }) {
+  return (
+    <>
+      {Array.from(text).map((character, index) =>
+        character === " " ? (
+          " "
+        ) : (
+          <span
+            className="about-proximity-char proximity-char"
+            data-proximity-char=""
+            aria-hidden="true"
+            key={`${character}-${index}`}
+          >
+            {character}
+          </span>
+        ),
+      )}
+    </>
+  )
+}
+
 export function HeroAboutTransition() {
   const transitionRef = useRef<HTMLDivElement>(null)
   const portraitRef = useRef<HTMLDivElement>(null)
@@ -164,9 +212,19 @@ export function HeroAboutTransition() {
           </div>
 
           <div className="hero-composition">
-            <Text as="h1" className="display-title hero-name hero-name--enter" id="hero-title">
-              <span>{heroContent.nameLead}</span>
-              <span className="display-accent">{heroContent.nameAccent}</span>
+            <Text
+              as="h1"
+              className="display-title hero-name hero-name--enter"
+              id="hero-title"
+              data-proximity-block=""
+              aria-label={`${heroContent.nameLead} ${heroContent.nameAccent}`}
+            >
+              <HeroNameLine text={heroContent.nameLead} />
+              <HeroNameLine
+                className="display-accent"
+                text={heroContent.nameAccent}
+                startIndex={heroContent.nameLead.length}
+              />
             </Text>
             <a className="hero-contact-link" href="#contact">
               <span>Say Hello</span>
@@ -204,13 +262,21 @@ export function HeroAboutTransition() {
           <PortraitCard className="portrait-card--static" />
 
           <div className="about-transition-introduction">
-            <Text as="h2" className="section-title about-title" id="about-title">
+            <Text
+              as="h2"
+              className="section-title about-title"
+              id="about-title"
+              data-proximity-block=""
+              aria-label={aboutContent.titleLines.join(" ")}
+            >
               {aboutContent.titleLines.map((line, index) => (
-                <span key={line}>
+                <span key={line} aria-hidden="true">
                   {index === aboutContent.titleLines.length - 1 ? (
-                    <em>{line}</em>
+                    <em>
+                      <AboutProximityText text={line} />
+                    </em>
                   ) : (
-                    line
+                    <AboutProximityText text={line} />
                   )}
                 </span>
               ))}
