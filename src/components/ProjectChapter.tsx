@@ -1,4 +1,5 @@
 import type { Project } from "../data/projects"
+import ArrowIcon from "./ArrowIcon"
 import { MediaPlaceholder } from "./MediaPlaceholder"
 import { useReveal } from "./Reveal"
 import { Text } from "./primitives"
@@ -72,6 +73,7 @@ export function ProjectChapter({ project, total }: ProjectChapterProps) {
               >
                 <Text as="h3" className="project-title">
                   {project.title}
+                  <ArrowIcon className="project-external-arrow" />
                 </Text>
                 <Text className="micro-label project-hover-label">
                   OPEN PROJECT

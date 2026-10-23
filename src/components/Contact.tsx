@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react"
 import { siBehance } from "simple-icons"
+import ArrowIcon from "./ArrowIcon"
 import { Text } from "./primitives"
 
 const portfolioMark =
@@ -510,7 +511,9 @@ export function Contact() {
                     <span className="contact-link-label">{item.number} — {item.label}</span>
                     <span className="contact-link-value">{item.value}</span>
                   </span>
-                  <span className="contact-link-arrow" aria-hidden="true">&#8599;</span>
+                  <span className="contact-link-arrow" aria-hidden="true">
+                    <ArrowIcon />
+                  </span>
                 </a>
               ))}
             </nav>
@@ -546,7 +549,12 @@ export function Contact() {
               onPointerDown={handlePullPointerDown}
               onClick={handlePullClick}
             >
-              <span aria-hidden="true">↓</span>
+              <span aria-hidden="true">
+                <ArrowIcon
+                  className="contact-paper-pull-arrow"
+                  direction="down"
+                />
+              </span>
               <span>Pull to shred</span>
             </button>
           ) : null}
@@ -593,7 +601,12 @@ export function Contact() {
               aria-label="Print the receipt again"
               onClick={handlePrintAgain}
             >
-              <span aria-hidden="true">↻</span>
+              <span aria-hidden="true">
+                <ArrowIcon
+                  className="contact-shred-reset-icon"
+                  direction="clockwise"
+                />
+              </span>
               <span>Print again</span>
             </button>
           ) : null}

@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router"
+import ArrowIcon from "../components/ArrowIcon"
 import { MediaPlaceholder } from "../components/MediaPlaceholder"
 import { Seo } from "../components/Seo"
 import { NavLink, Text } from "../components/primitives"
@@ -112,7 +113,8 @@ export function ProjectPage() {
           target="_blank"
           rel="noreferrer"
         >
-          VISIT PROJECT ↗
+          VISIT PROJECT
+          <ArrowIcon className="project-page-external-arrow" />
         </NavLink>
       ) : null}
 

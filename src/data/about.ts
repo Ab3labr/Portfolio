@@ -8,7 +8,7 @@ export const aboutContent = {
   titleLines: ["MAKING", "THINGS FEEL", "OBVIOUS."],
   introduction:
     "Good design should feel obvious. I’m interested in the thinking, details, and iterations that make it that way.",
-  workLinkLabel: "Explore selected work ↗",
+  workLinkLabel: "Explore selected work",
   details: [
     { label: "FOCUS", value: "Product design · Interface design · Brand identity" },
     { label: "BACKGROUND", value: "Electronics & Communication Engineer" },

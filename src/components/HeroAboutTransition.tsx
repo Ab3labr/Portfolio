@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from "react"
 import { aboutContent, heroContent } from "../data/about"
+import ArrowIcon from "./ArrowIcon"
 import { PortraitCard } from "./PortraitCard"
 import { SectionSignal } from "./SectionSignal"
 import { Text } from "./primitives"
@@ -229,7 +230,7 @@ export function HeroAboutTransition() {
             <a className="hero-contact-link" href="#contact">
               <span>Say Hello</span>
               <span className="hero-contact-arrow" aria-hidden="true">
-                ↗
+                <ArrowIcon />
               </span>
             </a>
           </div>
@@ -287,6 +288,7 @@ export function HeroAboutTransition() {
             <Text className="editorial-copy">{aboutContent.introduction}</Text>
             <a className="about-work-link" href="#work">
               {aboutContent.workLinkLabel}
+              <ArrowIcon className="about-work-arrow" />
             </a>
           </div>
 
