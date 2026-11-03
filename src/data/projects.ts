@@ -81,7 +81,7 @@ export const projects: Project[] = [
     tools: [],
     role: "",
     outcome: "",
-    link: "",
+    link: "https://amplify-three-delta.vercel.app/",
   },
   {
     id: "03",
